@@ -1,22 +1,32 @@
-###
-#
-# A simple image for installing the mongodb-mms-monitoring-agent
-#
-###
-FROM stackbrew/ubuntu:trusty
+# Dockerizing MongoDB: Dockerfile for building MongoDB images Based on ubuntu:latest, installs MongoDB 
+FROM phusion/baseimage:0.9.16
+# ...put your own build instructions here... Installation: Install MongoDB.
 
-RUN apt-get update && apt-get install -y curl logrotate
+# add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
+RUN groupadd -r mongodb && useradd -r -g mongodb mongodb
 
-# Get latest from https://mms.mongodb.com/settings/monitoring-agent
-RUN curl -sSL https://mms.mongodb.com/download/agent/monitoring/mongodb-mms-monitoring-agent_3.0.0.167-1_amd64.deb -o mms.deb
-RUN dpkg -i mms.deb
-RUN rm mms.deb
+RUN apt-get update \
+	&& apt-get install -y curl \
+	&& rm -rf /var/lib/apt/lists/*
 
-ADD entrypoint.sh /usr/bin/entrypoint.sh
-RUN chmod +x /usr/bin/entrypoint.sh
+RUN gpg --keyserver pgp.mit.edu --recv-keys DFFA3DCF326E302C4787673A01C4E7FAAAB2461C
 
-ENTRYPOINT ["/usr/bin/entrypoint.sh"]
+ENV MONGO_VERSION 2.6.3
 
-USER mongodb-mms-agent
-CMD ["mongodb-mms-monitoring-agent","-conf","/etc/mongodb-mms/monitoring-agent.config"]
+RUN curl -SL "https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-$MONGO_VERSION.tgz" -o mongo.tgz \
+	&& curl -SL "https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-$MONGO_VERSION.tgz.sig" -o mongo.tgz.sig \
+	&& gpg --verify mongo.tgz.sig \
+	&& tar -xvf mongo.tgz -C /usr/local --strip-components=1 \
+	&& rm mongo.tgz*
 
+# Define mountable directories.
+VOLUME ["/data"]
+# Define working directory.
+WORKDIR /data
+# Expose ports.
+#   - 27017: process 
+#   - 28017: http
+EXPOSE 27017 
+# EXPOSE 28017
+CMD ["mongod","-f", "/data/mongod.conf"]
+ 
