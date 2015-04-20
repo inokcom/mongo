@@ -1,5 +1,5 @@
 # Dockerizing MongoDB: Dockerfile for building MongoDB images Based on ubuntu:latest, installs MongoDB 
-FROM phusion/baseimage:0.9.16
+FROM quay.io/inok/baseimage
 # ...put your own build instructions here... Installation: Install MongoDB.
 
 # add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
